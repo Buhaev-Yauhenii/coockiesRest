@@ -57,9 +57,10 @@ class Recipe(models.Model):
     description = models.TextField(blank=True)
     link = models.CharField(max_length=255, blank=True)
     tags = models.ManyToManyField('Tag')
+    ingredients = models.ManyToManyField('Ingredient')
 
     def __str__(self):
-        return self.title
+        return f'{self.title}'
 
 
 class Tag(models.Model):
@@ -70,4 +71,16 @@ class Tag(models.Model):
     name = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return self.name
+        return f'{self.name}'
+
+
+class Ingredient(models.Model):
+    '''ingredient model'''
+    user = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f'{self.name}'
+

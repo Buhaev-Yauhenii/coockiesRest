@@ -12,7 +12,7 @@ from recipe import views
 router = DefaultRouter()
 router.register('recipes', views.RecipeViewSet)
 router.register('tags', views.TagAPIView)
-
+router.register('ingredients', views.IngredientAPIVew)
 app_name = 'recipe'
 
 urlpatterns = [

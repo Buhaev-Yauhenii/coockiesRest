@@ -1,9 +1,18 @@
 """Serializers for Recipe model"""
 
 from typing import Any
-from core.models import Recipe, Tag
+from core.models import Recipe, Tag, Ingredient
 
 from rest_framework import serializers
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    """serializer for ingredients"""
+
+    class Meta:
+        model = Ingredient
+        fields: list[str] = ['id', 'name']
+        read_only_fields = ['id']
 
 
 class TagSerializer(serializers.ModelSerializer):
