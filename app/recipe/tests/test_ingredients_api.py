@@ -15,7 +15,7 @@ INGREDIENT_URL = reverse('recipe:ingredient-list')
 
 def detailed_url(ingredient_id: int) -> str:
     '''url for detailed information of ingredient'''
-    return reverse('recipe:ingredient', args=[ingredient_id])
+    return reverse('recipe:ingredient-detail', args=[ingredient_id])
 
 
 def create_user(email: str = 'test@example.com',
@@ -61,16 +61,39 @@ class PrivateIngredientTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
-    def test_ingredients_limited_to_user(self):
+    def test_ingredients_limited_to_user(self) -> None:
         """Test list of ingredients is limited to authenticated user."""
-        user2 = create_user(email='user2@example.com')
+        user2: dict[str:str] = create_user(email='user2@example.com')
         models.Ingredient.objects.create(user=user2, name='Salt')
-        ingredient = models.Ingredient.objects.create(user=self.user,
-                                                      name='Pepper')
+        ingredient: dict[str:str] = models.Ingredient.objects.create(
+                                                                user=self.user,
+                                                                name='Pepper')
 
-        res = self.client.get(INGREDIENT_URL)
+        res: dict[str:str] = self.client.get(INGREDIENT_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]['name'], ingredient.name)
         self.assertEqual(res.data[0]['id'], ingredient.id)
+
+    def test_update_ingredient(self):
+        """tests for update information about updating inredient"""
+        ing = models.Ingredient.objects.create(user=self.user, name='title')
+        payload = {'name': 'New title'}
+        url = detailed_url(ing.id)
+        res = self.client.patch(url, payload)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        ing.refresh_from_db()
+        self.assertEqual(ing.name, payload['name'])
+
+    def test_delete_ingredient(self):
+        """test for deleting ingredients"""
+        ingredient = models.Ingredient.objects.create(user=self.user,
+                                                      name='ingredient')
+        url = detailed_url(ingredient.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+
+        ingredients = models.Ingredient.objects.filter(user=self.user)
+        self.assertFalse(ingredients.exists())

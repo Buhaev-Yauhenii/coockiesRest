@@ -16,6 +16,19 @@ from core.models import (
 from recipe import serializers
 
 
+class BaseClass(mixins.DestroyModelMixin,
+                mixins.UpdateModelMixin,
+                mixins.ListModelMixin,
+                viewsets.GenericViewSet):
+    """vase class for views"""
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """get all tags for auth user"""
+        return self.queryset.filter(user=self.request.user).order_by('-name')
+
+
 class RecipeViewSet(viewsets.ModelViewSet):
     """
     view set for recipe API
@@ -40,31 +53,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class TagAPIView(
-        mixins.DestroyModelMixin,
-        mixins.UpdateModelMixin,
-        mixins.ListModelMixin,
-        viewsets.GenericViewSet):
+class TagAPIView(BaseClass):
 
     """Views for TAG models."""
     serializer_class = serializers.TagSerializer
     queryset = Tag.objects.all()
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        """get all tags for auth user"""
-        return self.queryset.filter(user=self.request.user).order_by('-name')
 
 
-class IngredientAPIVew(mixins.ListModelMixin, viewsets.GenericViewSet):
+class IngredientAPIVew(BaseClass):
     """views for ingredient model"""
 
     serializer_class = serializers.IngredientSerializer
     queryset = Ingredient.objects.all()
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self) -> None:
-        '''get all ingredients'''
-        return self.queryset.filter(user=self.request.user).order_by('-name')
