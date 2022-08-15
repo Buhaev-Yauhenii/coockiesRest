@@ -1,5 +1,5 @@
 """Tests for tags API."""
-
+from decimal import Decimal
 from typing import Any
 from django.test import TestCase
 from django.contrib.auth import get_user_model
@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from core.models import Tag
+from core.models import (Tag, Recipe)
 from recipe.serializers import TagSerializer
 
 TAGS_URL = reverse('recipe:tag-list')
@@ -98,3 +98,42 @@ class PrivateTAGsTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         tags: dict[str, str] = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
+
+    def test_filter_tags_asigning_recipe(self):
+        """test for filtering recipe by ingredients"""
+        tag1 = Tag.objects.create(user=self.user, name="tag1")
+        tag2 = Tag.objects.create(user=self.user, name="tag2")
+        recipe = Recipe.objects.create(
+            title='recipe',
+            time_minutes=22,
+            price=Decimal('44.2'),
+            user=self.user,
+        )
+        recipe.tags.add(tag1)
+        res = self.client.get(TAGS_URL, {'assignet_only': 1})
+
+        t1 = TagSerializer(tag1)
+        t2 = TagSerializer(tag2)
+        self.assertIn(t1.data, res.data)
+        self.assertNotIn(t2.data, res.data)
+
+    def test_filter_ingredients_unique(self):
+        """test is ingredients returned list is unique"""
+        tag1 = Tag.objects.create(user=self.user, name="tag1")
+        Tag.objects.create(user=self.user, name="tag2")
+        recipe = Recipe.objects.create(
+            user=self.user,
+            title="recipe",
+            time_minutes=32,
+            price=Decimal('12.2')
+        )
+        recipe2 = Recipe.objects.create(
+            user=self.user,
+            title="recipe2",
+            time_minutes=12,
+            price=Decimal('52.2')
+        )
+        recipe.tags.add(tag1)
+        recipe2.tags.add(tag1)
+        res = self.client.get(TAGS_URL, {'assignet_only': 1})
+        self.assertEqual(len(res.data), 1)

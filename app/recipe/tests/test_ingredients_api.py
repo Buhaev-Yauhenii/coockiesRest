@@ -1,4 +1,5 @@
 '''tests for views of ingredient'''
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -97,3 +98,42 @@ class PrivateIngredientTests(TestCase):
 
         ingredients = models.Ingredient.objects.filter(user=self.user)
         self.assertFalse(ingredients.exists())
+
+    def test_filter_ingredients_asigning_recipe(self):
+        """test for filtering recipe by ingredients"""
+        ingr1 = models.Ingredient.objects.create(user=self.user, name="ingr1")
+        ingr2 = models.Ingredient.objects.create(user=self.user, name="ingr2")
+        recipe = models.Recipe.objects.create(
+            title='recipe',
+            time_minutes=22,
+            price=Decimal('44.2'),
+            user=self.user,
+        )
+        recipe.ingredients.add(ingr1)
+        res = self.client.get(INGREDIENT_URL, {'assignet_only': 1})
+
+        s1 = IngredientSerializer(ingr1)
+        s2 = IngredientSerializer(ingr2)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filter_ingredients_unique(self):
+        """test is ingredients returned list is unique"""
+        ingr = models.Ingredient.objects.create(user=self.user, name="ingr1")
+        models.Ingredient.objects.create(user=self.user, name="ingr2")
+        recipe = models.Recipe.objects.create(
+            user=self.user,
+            title="recipe",
+            time_minutes=32,
+            price=Decimal('12.2')
+        )
+        recipe2 = models.Recipe.objects.create(
+            user=self.user,
+            title="recipe2",
+            time_minutes=12,
+            price=Decimal('52.2')
+        )
+        recipe.ingredients.add(ingr)
+        recipe2.ingredients.add(ingr)
+        res = self.client.get(INGREDIENT_URL, {'assignet_only': 1})
+        self.assertEqual(len(res.data), 1)
